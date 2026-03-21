@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+backend/.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+# Build
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docker
+redis_data/
+
+# Python
+*.egg
+.eggs/
+*.whl
+
+# Logs
+*.log
+celerybeat-schedule
+
+# Secrets / credentials
+credentials.json
+token.json
+*.pem
+
+# PDF temp files
+*.tmp
+
+# Sentry
+.sentryclirc

@@ -1,0 +1,13 @@
+Generate {{ count }} practice questions about "{{ topic }}" for a {{ role_level }} engineering interview.
+
+Mix question types:
+- Conceptual: test understanding of the concept
+- Applied: present a real scenario that requires applying the concept
+
+Target difficulty for depth level {{ depth }}/5.
+
+Return as JSON array:
+[
+  {"question": "...", "type": "conceptual"|"applied"},
+  ...
+]

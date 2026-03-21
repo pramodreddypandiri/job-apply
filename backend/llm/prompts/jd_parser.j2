@@ -1,0 +1,22 @@
+Parse this job description and return JSON with this exact structure:
+{
+  "company_name": str,
+  "role_title": str,
+  "role_title_normalised": str,
+  "seniority": str | null,
+  "location": str | null,
+  "team": str | null,
+  "ats_type": str | null,
+  "required_skills": [str],
+  "nice_to_have_skills": [str],
+  "required_experience_years": int | null,
+  "about_company": str,
+  "role_summary": str,
+  "key_responsibilities": [str],
+  "keywords": [str],
+  "salary_range": str | null,
+  "visa_sponsorship": bool | null
+}
+
+Job description:
+{{ jd_text }}

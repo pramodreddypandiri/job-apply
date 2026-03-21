@@ -1,0 +1,18 @@
+Compare the original resume against the tailored version.
+Flag any content in the tailored version that:
+1. Claims experience at companies not in the original
+2. Claims dates of employment not in the original
+3. Claims achievements with numbers significantly higher than original (>50% inflation)
+4. Claims skills at professional level that only appear as side projects in original
+5. Removes significant gaps or career changes from the original
+
+Return JSON:
+{
+  "passes": bool,
+  "flags": [
+    {"type": str, "original": str, "proposed": str, "severity": "block"|"warn"}
+  ]
+}
+
+Original: {{ original }}
+Tailored: {{ tailored }}

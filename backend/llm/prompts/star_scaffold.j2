@@ -1,0 +1,20 @@
+The user has a project called "{{ project_name }}" with the following details:
+{{ project_description }}
+
+Tech stack: {{ tech_stack | join(', ') }}
+Ownership level: {{ ownership_level }}
+Depth score: {{ depth }}/5
+
+Generate a STAR story scaffold for the behavioural theme "{{ theme }}":
+
+Return JSON:
+{
+  "theme": "{{ theme }}",
+  "project": "{{ project_name }}",
+  "situation": "brief context setting (1-2 sentences)",
+  "task": "what needed to be accomplished",
+  "action": "specific actions taken (technical details welcome)",
+  "result": "measurable outcome or impact"
+}
+
+Be specific and technical. Use the project details to make it authentic.

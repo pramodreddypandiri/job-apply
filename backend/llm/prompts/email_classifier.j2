@@ -1,0 +1,17 @@
+Email subject: {{ subject }}
+Email from: {{ sender }}
+Email body (first 500 chars): {{ body_snippet }}
+
+Known applications (company names and roles): {{ applications_context }}
+
+Classify and return:
+{
+  "classification": "confirmed"|"viewed"|"interview_invite"|"rejection"|"offer"|"unrelated",
+  "company_name": str | null,
+  "role_title": str | null,
+  "confidence": float,
+  "interview_date": str | null,
+  "interview_type_hints": [str],
+  "action_required": bool,
+  "summary": str
+}

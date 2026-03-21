@@ -1,0 +1,23 @@
+Job Description (parsed):
+{{ jd_parsed | tojson }}
+
+User's master resume:
+{{ master_resume }}
+
+Skill graph entries eligible for elevation (depth >= 3, interview_defensible = true):
+{{ eligible_skills | tojson }}
+
+Instructions from user:
+{{ user_instructions or "None" }}
+
+Rewrite the resume to maximise fit for this role. Return the full resume text.
+At the end, append a JSON block tagged <changes> with this structure:
+{
+  "changes": [
+    {"type": "reframed"|"elevated"|"added"|"removed", "section": str, "original": str|null, "new": str, "reason": str}
+  ],
+  "pct_changed": float,
+  "skills_elevated": [str],
+  "projects_elevated": [str],
+  "jd_overlap_score": float
+}

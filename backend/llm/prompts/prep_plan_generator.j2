@@ -1,0 +1,43 @@
+Interview details:
+- Company: {{ company }}
+- Role: {{ role }}
+- Interview type: {{ interview_type }}
+- Date: {{ interview_date }}
+- Days available: {{ days_available }}
+
+Research findings:
+{{ research_summary }}
+
+User's tailored resume claims to defend:
+{{ claims_to_defend | join('\n') }}
+
+User's skill gaps for this role:
+{{ gap_topics | join(', ') }}
+
+User's STAR-eligible projects:
+{{ star_projects | tojson }}
+
+Generate a day-by-day prep plan. Return JSON:
+{
+  "process_summary": str,
+  "question_patterns": [{"topic": str, "frequency": int, "example_questions": [str]}],
+  "prep_plan": {
+    "days": [{
+      "day": int,
+      "focus": str,
+      "tasks": [str],
+      "resources": [{"title": str, "url": str}],
+      "time_estimate_mins": int
+    }]
+  },
+  "star_stories": [{
+    "theme": str,
+    "project": str,
+    "situation": str,
+    "task": str,
+    "action": str,
+    "result": str
+  }],
+  "gap_topics": [str],
+  "strength_topics": [str]
+}
