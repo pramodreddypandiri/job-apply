@@ -6,7 +6,13 @@
       "Bash(curl -s -H \"Authorization: Bearer test\" http://localhost:8000/resume)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/login)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/signup)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/signup)",
+      "Bash(wc -l /Users/pramodreddypandiri/Desktop/Projects/job-apply/frontend/src/app/apply/page.tsx /Users/pramodreddypandiri/Desktop/Projects/job-apply/frontend/src/app/apply/review/[id]/page.tsx /Users/pramodreddypandiri/Desktop/Projects/job-apply/frontend/src/lib/api.ts /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/api/routes/applications.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/tasks/application.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/agents/jd_parser.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/agents/narrative.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/agents/auth_guard.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/agents/form_fill.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/agents/deduplicator.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/utils/pdf.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/utils/browser.py /Users/pramodreddypandiri/Desktop/Projects/job-apply/backend/llm/client.py)",
+      "Bash(find /Users/pramodreddypandiri/Desktop/Projects/job-apply -path */review/* -name *.tsx)",
+      "Bash(DYLD_LIBRARY_PATH=/opt/homebrew/lib backend/.venv/bin/python -c \"from weasyprint import HTML; print\\(''WeasyPrint OK''\\)\")",
+      "Bash(backend/.venv/bin/python -m pip install fpdf2)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/apply)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://fedrytnvaronqdnmtcbf.supabase.co/storage/v1/object/public/resumes/b2ecddb5-3abe-42f3-81ee-12812aa3c7d7/0981664c-bc79-40c5-b916-21c4e1016a26/resume.pdf\")"
     ]
   }
 }

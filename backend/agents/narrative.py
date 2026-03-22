@@ -82,9 +82,12 @@ def align_resume(
 
     logger.info(f"Resume aligned — {changes_data.get('pct_changed', 0)}% changed")
 
+    from backend.utils.resume_html import text_to_resume_html
+    resume_html = text_to_resume_html(resume_text)
+
     return {
         "resume_text": resume_text,
-        "resume_html": f"<pre>{resume_text}</pre>",  # TODO: proper HTML template
+        "resume_html": resume_html,
         "changes": changes_data.get("changes", []),
         "pct_changed": changes_data.get("pct_changed", 0),
         "skills_elevated": changes_data.get("skills_elevated", []),

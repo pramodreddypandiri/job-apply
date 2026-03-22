@@ -100,6 +100,9 @@ export const discardApplication = (id: string) =>
 
 export const getResumeDiff = (id: string) => apiFetch(`/applications/${id}/resume/diff`);
 
+export const retrySubmit = (id: string) =>
+  apiFetch(`/applications/${id}/retry-submit`, { method: "POST" });
+
 // ── Interview Prep ────────────────────────────────────
 export const getInterviewPrep = (applicationId: string) =>
   apiFetch(`/applications/${applicationId}/prep`);

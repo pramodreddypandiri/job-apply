@@ -12,7 +12,7 @@ export default function OnboardingPage() {
   const [form, setForm] = useState({
     target_roles: "",
     target_locations: "",
-    seniority_floor: "senior",
+    seniority_levels: ["senior"] as string[],
     github_username: "",
     linkedin_url: "",
     portfolio_url: "",
@@ -35,7 +35,7 @@ export default function OnboardingPage() {
       const formData = new FormData();
       formData.append("target_roles", form.target_roles);
       formData.append("target_locations", form.target_locations);
-      formData.append("seniority_floor", form.seniority_floor);
+      formData.append("seniority_floor", form.seniority_levels.join(","));
       formData.append("github_username", form.github_username);
       formData.append("linkedin_url", form.linkedin_url);
       formData.append("portfolio_url", form.portfolio_url);
@@ -119,17 +119,34 @@ export default function OnboardingPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Seniority floor</label>
-          <select
-            value={form.seniority_floor}
-            onChange={(e) => setForm({ ...form, seniority_floor: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2"
-          >
-            <option value="any">Any</option>
-            <option value="senior">Senior</option>
-            <option value="staff">Staff</option>
-            <option value="principal">Principal</option>
-          </select>
+          <label className="block text-sm font-medium">Seniority levels</label>
+          <p className="mt-1 text-xs text-[var(--muted-foreground)]">Select all that apply</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {["junior", "intermediate", "senior", "staff", "principal"].map((level) => {
+              const selected = form.seniority_levels.includes(level);
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => {
+                    setForm({
+                      ...form,
+                      seniority_levels: selected
+                        ? form.seniority_levels.filter((l) => l !== level)
+                        : [...form.seniority_levels, level],
+                    });
+                  }}
+                  className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${
+                    selected
+                      ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                      : "border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)]"
+                  }`}
+                >
+                  {level}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div>

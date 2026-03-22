@@ -5,8 +5,8 @@ from loguru import logger
 
 
 class Model(str, Enum):
-    HAIKU = "claude-haiku-4-5-20251001"
-    SONNET = "claude-sonnet-4-5-20250514"
+    HAIKU = "claude-3-haiku-20240307"
+    SONNET = "claude-3-haiku-20240307"
 
 
 from backend.config import get_settings

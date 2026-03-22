@@ -173,6 +173,24 @@ async def discard_application(application_id: str, user: dict = Depends(get_curr
     return {"status": "withdrawn"}
 
 
+@router.post("/{application_id}/retry-submit")
+async def retry_submit(application_id: str, user: dict = Depends(get_current_user)):
+    """Re-trigger form fill for a needs_action application."""
+    app = db.get_application(application_id)
+    if not app or app["user_id"] != user["id"]:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    if app["status"] not in ("needs_action", "review_pending"):
+        raise HTTPException(status_code=400, detail=f"Cannot retry from status: {app['status']}")
+
+    db.update_application(application_id, {"status": "submitting"})
+
+    from backend.tasks.application import fill_form
+    task = fill_form.delay(application_id)
+
+    return {"status": "submitting", "task_id": str(task.id)}
+
+
 @router.get("/{application_id}/resume/diff", response_model=ResumeDiffResponse)
 async def get_resume_diff(application_id: str, user: dict = Depends(get_current_user)):
     app = db.get_application(application_id)

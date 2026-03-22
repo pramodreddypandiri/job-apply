@@ -73,10 +73,44 @@ def align_narrative(self, prev_result: dict):
         profile = db.get_user_profile(app["user_id"])
         skills = db.get_skill_graph(app["user_id"])
 
+        # Use structured master resume if available, fall back to plain text
+        master_resume_row = db.get_master_resume(app["user_id"])
+        if master_resume_row and master_resume_row.get("summary"):
+            import json
+            # Build a rich text representation from the structured resume
+            mr = master_resume_row
+            parts = []
+            pd = mr.get("personal_details", {})
+            if pd.get("full_name"):
+                parts.append(pd["full_name"])
+                contact = " | ".join(filter(None, [pd.get("email"), pd.get("phone"), pd.get("location")]))
+                if contact:
+                    parts.append(contact)
+            if mr.get("summary"):
+                parts.append(f"\nSUMMARY\n{mr['summary']}")
+            for exp in mr.get("experience", []):
+                dates = f"{exp.get('start_date', '')} - {exp.get('end_date', 'Present')}"
+                parts.append(f"\n{exp.get('role', '')} | {exp.get('company', '')} | {dates}")
+                for b in exp.get("bullets", []):
+                    parts.append(f"  - {b}")
+            for edu in mr.get("education", []):
+                parts.append(f"\n{edu.get('degree', '')} {edu.get('field', '')} | {edu.get('institution', '')}")
+            for proj in mr.get("projects", []):
+                parts.append(f"\n{proj.get('name', '')} — {proj.get('description', '')}")
+                for b in proj.get("bullets", []):
+                    parts.append(f"  - {b}")
+            if mr.get("skills"):
+                parts.append("\nSKILLS")
+                for sg in mr["skills"]:
+                    parts.append(f"{sg.get('category', '')}: {', '.join(sg.get('items', []))}")
+            master_resume_text = "\n".join(parts)
+        else:
+            master_resume_text = profile.get("resume_master", "") if profile else ""
+
         from backend.agents.narrative import align_resume
         result = align_resume(
             jd_parsed=prev_result["jd_parsed"],
-            master_resume=profile.get("resume_master", ""),
+            master_resume=master_resume_text,
             skill_graph=skills,
             user_instructions=app.get("instructions"),
         )
@@ -93,6 +127,11 @@ def align_narrative(self, prev_result: dict):
             "status": "draft",
         })
 
+        # Persist JD overlap score on the application
+        db.update_application(application_id, {
+            "jd_overlap_score": result.get("jd_overlap_score", 0),
+        })
+
         return {
             "application_id": application_id,
             "resume_id": resume["id"],
@@ -101,6 +140,20 @@ def align_narrative(self, prev_result: dict):
 
     except Exception as exc:
         logger.error(f"[align_narrative] Failed: {exc}")
+        try:
+            from backend.db.client import init_supabase
+            from backend.db import queries as db
+            init_supabase()
+            db.update_application(application_id, {"status": "needs_action"})
+            db.create_tracker_event({
+                "application_id": application_id,
+                "user_id": app["user_id"] if "app" in dir() else None,
+                "event_type": "needs_action",
+                "source": "agent",
+                "metadata": {"error": str(exc), "step": "align_narrative"},
+            })
+        except Exception:
+            pass
         raise self.retry(exc=exc, countdown=30)
 
 
@@ -117,9 +170,16 @@ def run_auth_guard(self, prev_result: dict):
         app = db.get_application(application_id)
         profile = db.get_user_profile(app["user_id"])
 
+        # Use resume_master text or build from structured resume
+        original_text = profile.get("resume_master", "") if profile else ""
+        if not original_text:
+            mr = db.get_master_resume(app["user_id"])
+            if mr and mr.get("summary"):
+                original_text = mr.get("summary", "")
+
         from backend.agents.auth_guard import check_authenticity
         result = check_authenticity(
-            original=profile.get("resume_master", ""),
+            original=original_text,
             tailored=prev_result["resume_text"],
         )
 
@@ -132,6 +192,20 @@ def run_auth_guard(self, prev_result: dict):
 
     except Exception as exc:
         logger.error(f"[run_auth_guard] Failed: {exc}")
+        try:
+            from backend.db.client import init_supabase
+            from backend.db import queries as db
+            init_supabase()
+            db.update_application(application_id, {"status": "needs_action"})
+            db.create_tracker_event({
+                "application_id": application_id,
+                "user_id": prev_result.get("user_id"),
+                "event_type": "needs_action",
+                "source": "agent",
+                "metadata": {"error": str(exc), "step": "auth_guard"},
+            })
+        except Exception:
+            pass
         raise self.retry(exc=exc, countdown=30)
 
 
@@ -143,6 +217,7 @@ def generate_resume_pdf(self, prev_result: dict):
     try:
         from backend.db.client import init_supabase, supabase
         from backend.db import queries as db
+        from backend.config import get_settings
         init_supabase()
 
         resume = db.get_resume_by_application(application_id)
@@ -154,8 +229,24 @@ def generate_resume_pdf(self, prev_result: dict):
 
         # Upload to Supabase Storage
         path = f"{resume['user_id']}/{application_id}/resume.pdf"
-        supabase.storage.from_("resumes").upload(path, pdf_bytes, {"content-type": "application/pdf"})
-        pdf_url = f"{supabase.supabase_url}/storage/v1/object/public/resumes/{path}"
+        bucket = supabase.storage.from_("resumes")
+        try:
+            bucket.upload(path, pdf_bytes, {"content-type": "application/pdf"})
+        except Exception as upload_err:
+            # If file exists already, update it
+            if "Duplicate" in str(upload_err) or "already exists" in str(upload_err):
+                bucket.update(path, pdf_bytes, {"content-type": "application/pdf"})
+            else:
+                raise
+
+        # Generate a signed URL (works even if bucket is not public)
+        signed = bucket.create_signed_url(path, 60 * 60 * 24 * 365)  # 1 year
+        pdf_url = signed.get("signedURL") or signed.get("signedUrl", "")
+
+        if not pdf_url:
+            # Fallback to public URL
+            base_url = get_settings().supabase_url.rstrip("/")
+            pdf_url = f"{base_url}/storage/v1/object/public/resumes/{path}"
 
         db.update_resume(resume["id"], {"resume_pdf_url": pdf_url})
         db.update_application(application_id, {"status": "review_pending"})
@@ -189,22 +280,39 @@ def fill_form(self, application_id: str):
             profile=profile,
         ))
 
-        db.update_application(application_id, {
-            "status": "applied",
-            "submitted_at": "now()",
-            "submission_screenshot_url": result.get("screenshot_url"),
-            "form_fill_log": result.get("log", {}),
-        })
+        if result.get("submitted"):
+            db.update_application(application_id, {
+                "status": "applied",
+                "submitted_at": "now()",
+                "submission_screenshot_url": result.get("screenshot_url"),
+                "form_fill_log": result.get("log", {}),
+            })
+            db.create_tracker_event({
+                "application_id": application_id,
+                "user_id": app["user_id"],
+                "event_type": "applied",
+                "source": "agent",
+                "metadata": {"ats_type": app.get("ats_type")},
+            })
+        else:
+            # Form fill didn't submit — escalation or missing button
+            db.update_application(application_id, {
+                "status": "needs_action",
+                "submission_screenshot_url": result.get("screenshot_url"),
+                "form_fill_log": result.get("log", {}),
+            })
+            db.create_tracker_event({
+                "application_id": application_id,
+                "user_id": app["user_id"],
+                "event_type": "needs_action",
+                "source": "agent",
+                "metadata": {
+                    "reason": result.get("escalation") or result.get("log", {}).get("reason", "unknown"),
+                    "step": "fill_form",
+                },
+            })
 
-        db.create_tracker_event({
-            "application_id": application_id,
-            "user_id": app["user_id"],
-            "event_type": "applied",
-            "source": "agent",
-            "metadata": {"ats_type": app.get("ats_type")},
-        })
-
-        return {"application_id": application_id, "submitted": True}
+        return {"application_id": application_id, "submitted": result.get("submitted", False)}
 
     except Exception as exc:
         logger.error(f"[fill_form] Failed: {exc}")
