@@ -3,11 +3,18 @@
 from backend.db.client import supabase
 
 
+def _safe_single(query) -> dict | None:
+    """Execute a maybe_single() query safely — returns None if no row found."""
+    result = query.maybe_single().execute()
+    if result is None:
+        return None
+    return result.data
+
+
 # ── Users Profile ──────────────────────────────────────────────
 
 def get_user_profile(user_id: str) -> dict | None:
-    result = supabase.table("users_profile").select("*").eq("id", user_id).maybe_single().execute()
-    return result.data
+    return _safe_single(supabase.table("users_profile").select("*").eq("id", user_id))
 
 
 def upsert_user_profile(user_id: str, data: dict) -> dict:
@@ -29,6 +36,19 @@ def upsert_skill(user_id: str, skill_name: str, data: dict) -> dict:
     return result.data[0]
 
 
+# ── Master Resume ─────────────────────────────────────────────
+
+def get_master_resume(user_id: str) -> dict | None:
+    return _safe_single(supabase.table("master_resume").select("*").eq("user_id", user_id))
+
+
+def upsert_master_resume(user_id: str, data: dict) -> dict:
+    result = supabase.table("master_resume").upsert(
+        {"user_id": user_id, **data}, on_conflict="user_id"
+    ).execute()
+    return result.data[0]
+
+
 # ── Applications ───────────────────────────────────────────────
 
 def create_application(data: dict) -> dict:
@@ -37,8 +57,7 @@ def create_application(data: dict) -> dict:
 
 
 def get_application(application_id: str) -> dict | None:
-    result = supabase.table("applications").select("*").eq("id", application_id).maybe_single().execute()
-    return result.data
+    return _safe_single(supabase.table("applications").select("*").eq("id", application_id))
 
 
 def get_user_applications(user_id: str, status: str | None = None, limit: int = 50, offset: int = 0) -> list[dict]:
@@ -55,27 +74,15 @@ def update_application(application_id: str, data: dict) -> dict:
 
 
 def find_application_by_url(user_id: str, canonical_url: str) -> dict | None:
-    result = (
-        supabase.table("applications")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("canonical_url", canonical_url)
-        .maybe_single()
-        .execute()
+    return _safe_single(
+        supabase.table("applications").select("*").eq("user_id", user_id).eq("canonical_url", canonical_url)
     )
-    return result.data
 
 
 def find_application_by_fingerprint(user_id: str, fingerprint: str) -> dict | None:
-    result = (
-        supabase.table("applications")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("role_fingerprint", fingerprint)
-        .maybe_single()
-        .execute()
+    return _safe_single(
+        supabase.table("applications").select("*").eq("user_id", user_id).eq("role_fingerprint", fingerprint)
     )
-    return result.data
 
 
 # ── Resumes ────────────────────────────────────────────────────
@@ -86,14 +93,9 @@ def create_resume(data: dict) -> dict:
 
 
 def get_resume_by_application(application_id: str) -> dict | None:
-    result = (
-        supabase.table("resumes")
-        .select("*")
-        .eq("application_id", application_id)
-        .maybe_single()
-        .execute()
+    return _safe_single(
+        supabase.table("resumes").select("*").eq("application_id", application_id)
     )
-    return result.data
 
 
 def update_resume(resume_id: str, data: dict) -> dict:
@@ -122,14 +124,9 @@ def get_application_events(application_id: str) -> list[dict]:
 # ── Interview Prep ─────────────────────────────────────────────
 
 def get_interview_prep(application_id: str) -> dict | None:
-    result = (
-        supabase.table("interview_prep")
-        .select("*")
-        .eq("application_id", application_id)
-        .maybe_single()
-        .execute()
+    return _safe_single(
+        supabase.table("interview_prep").select("*").eq("application_id", application_id)
     )
-    return result.data
 
 
 def create_interview_prep(data: dict) -> dict:
@@ -140,15 +137,9 @@ def create_interview_prep(data: dict) -> dict:
 # ── Prep Sessions ──────────────────────────────────────────────
 
 def get_prep_session(user_id: str, session_date: str) -> dict | None:
-    result = (
-        supabase.table("prep_sessions")
-        .select("*, prep_items(*)")
-        .eq("user_id", user_id)
-        .eq("session_date", session_date)
-        .maybe_single()
-        .execute()
+    return _safe_single(
+        supabase.table("prep_sessions").select("*, prep_items(*)").eq("user_id", user_id).eq("session_date", session_date)
     )
-    return result.data
 
 
 def create_prep_session(data: dict) -> dict:

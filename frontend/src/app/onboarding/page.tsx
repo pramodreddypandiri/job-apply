@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { onboard } from "@/lib/api";
+import { onboard, uploadResumePDF } from "@/lib/api";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -42,7 +42,17 @@ export default function OnboardingPage() {
       if (resumeFile) formData.append("resume_pdf", resumeFile);
 
       await onboard(formData);
-      router.push("/dashboard");
+
+      // If resume was uploaded, also parse it into structured My Resume
+      if (resumeFile) {
+        try {
+          await uploadResumePDF(resumeFile);
+        } catch {
+          // Non-critical — user can re-upload from My Resume page
+        }
+      }
+
+      router.push("/resume");
     } catch (err) {
       console.error("Onboarding error:", err);
     } finally {

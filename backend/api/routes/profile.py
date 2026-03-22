@@ -1,5 +1,6 @@
 """Profile routes."""
 
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from backend.api.middleware.auth import get_current_user
 from backend.db.client import supabase
@@ -63,7 +64,7 @@ async def onboard(
         "linkedin_url": linkedin_url or None,
         "github_username": github_username or None,
         "portfolio_url": portfolio_url or None,
-        "onboarded_at": "now()",
+        "onboarded_at": datetime.now(timezone.utc).isoformat(),
     }
 
     # Upload resume PDF to Supabase Storage
@@ -73,9 +74,15 @@ async def onboard(
         supabase.storage.from_("resumes").upload(path, content, {"content-type": "application/pdf"})
         data["resume_pdf_url"] = f"{supabase.supabase_url}/storage/v1/object/public/resumes/{path}"
 
-        # Extract text from PDF for resume_master field
-        # TODO: PDF text extraction — for now store filename
-        data["resume_master"] = f"[Uploaded: {resume_pdf.filename}]"
+        # Extract text from PDF
+        try:
+            import fitz  # pymupdf
+            doc = fitz.open(stream=content, filetype="pdf")
+            data["resume_master"] = "\n".join(page.get_text() for page in doc)
+            doc.close()
+        except Exception as e:
+            logger.warning(f"PDF text extraction failed: {e}")
+            data["resume_master"] = f"[Uploaded: {resume_pdf.filename}]"
 
     profile = db.upsert_user_profile(user["id"], data)
 

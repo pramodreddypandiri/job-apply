@@ -73,6 +73,12 @@ export default function DashboardPage() {
               + Apply
             </button>
             <button
+              onClick={() => router.push("/resume")}
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
+            >
+              My Resume
+            </button>
+            <button
               onClick={() => router.push("/prepare")}
               className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
             >

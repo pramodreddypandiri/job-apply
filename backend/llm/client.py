@@ -9,7 +9,9 @@ class Model(str, Enum):
     SONNET = "claude-sonnet-4-5-20250514"
 
 
-client = anthropic.Anthropic()
+from backend.config import get_settings
+
+client = anthropic.Anthropic(api_key=get_settings().anthropic_api_key)
 
 
 def extract(prompt: str, system: str, max_tokens: int = 1000) -> dict:
@@ -22,6 +24,12 @@ def extract(prompt: str, system: str, max_tokens: int = 1000) -> dict:
         messages=[{"role": "user", "content": prompt}],
     )
     text = response.content[0].text
+    # Strip markdown code fences if present
+    if "```" in text:
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+        text = text.strip()
     return json.loads(text)
 
 

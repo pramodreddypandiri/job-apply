@@ -7,11 +7,15 @@ export async function apiFetch(path: string, options?: RequestInit) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  if (!session?.access_token) {
+    throw new Error("Not authenticated");
+  }
+
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${session?.access_token}`,
+      Authorization: `Bearer ${session.access_token}`,
       ...options?.headers,
     },
   });
@@ -37,6 +41,31 @@ export async function onboard(formData: FormData) {
     body: formData,
   });
   if (!res.ok) throw new Error("Onboarding failed");
+  return res.json();
+}
+
+// ── Master Resume ────────────────────────────────────
+export const getResume = () => apiFetch("/resume");
+
+export const saveResume = (data: Record<string, unknown>) =>
+  apiFetch("/resume", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+export async function uploadResumePDF(file: File) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const formData = new FormData();
+  formData.append("resume_pdf", file);
+  const res = await fetch(`${API}/resume/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session?.access_token}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || res.statusText);
+  }
   return res.json();
 }
 

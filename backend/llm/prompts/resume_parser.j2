@@ -1,0 +1,70 @@
+Parse this resume text into structured JSON sections. Extract every detail accurately — do not invent information.
+
+Return JSON with this exact structure:
+{
+  "personal_details": {
+    "full_name": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "linkedin_url": "",
+    "github_url": "",
+    "portfolio_url": ""
+  },
+  "summary": "professional summary or objective if present, else empty string",
+  "experience": [
+    {
+      "company": "",
+      "role": "",
+      "location": "",
+      "start_date": "Mon YYYY",
+      "end_date": "Mon YYYY or Present",
+      "current": false,
+      "bullets": ["achievement or responsibility"]
+    }
+  ],
+  "education": [
+    {
+      "institution": "",
+      "degree": "",
+      "field": "",
+      "start_date": "",
+      "end_date": "",
+      "gpa": "",
+      "highlights": []
+    }
+  ],
+  "projects": [
+    {
+      "name": "",
+      "description": "",
+      "tech_stack": [],
+      "url": "",
+      "bullets": []
+    }
+  ],
+  "skills": [
+    {
+      "category": "Languages|Frameworks|Databases|Tools|Cloud|Other",
+      "items": ["skill1", "skill2"]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "",
+      "issuer": "",
+      "date": "",
+      "url": ""
+    }
+  ]
+}
+
+Rules:
+- Use "Mon YYYY" format for dates (e.g. "Jan 2023")
+- If end_date is "Present" or current role, set current: true
+- Group skills by logical category
+- Omit empty sections as empty arrays
+- Keep bullet points as-is from the resume, do not rephrase
+
+Resume text:
+{{ resume_text }}

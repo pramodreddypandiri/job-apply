@@ -1,11 +1,25 @@
 """JWT auth middleware — validates Supabase JWT on every request."""
 
-from fastapi import Request, HTTPException, Depends
+from functools import lru_cache
+from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+from jose import jwt, jwk, JWTError
+from loguru import logger
+import httpx
 from backend.config import get_settings
 
 security = HTTPBearer()
+
+
+@lru_cache
+def _get_jwks_key():
+    """Fetch and cache the Supabase JWKS public key."""
+    settings = get_settings()
+    jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
+    resp = httpx.get(jwks_url, timeout=10)
+    resp.raise_for_status()
+    keys = resp.json()["keys"]
+    return jwk.construct(keys[0])
 
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
@@ -14,16 +28,21 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     token = credentials.credentials
 
     try:
-        # Supabase JWTs are signed with the JWT secret (derived from service key)
-        # In development, we decode without full verification for speed
-        # The SUPABASE_URL contains the project ref used to build the JWKS URL
-        payload = jwt.decode(
-            token,
-            settings.supabase_service_key,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
+        header = jwt.get_unverified_header(token)
+        alg = header.get("alg", "HS256")
+
+        if alg == "HS256":
+            payload = jwt.decode(
+                token, settings.supabase_jwt_secret, algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
+        else:
+            key = _get_jwks_key()
+            payload = jwt.decode(
+                token, key, algorithms=[alg], options={"verify_aud": False},
+            )
     except JWTError as e:
+        logger.error(f"JWT decode failed: {e}")
         raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
 
     user_id = payload.get("sub")

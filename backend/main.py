@@ -31,10 +31,11 @@ app.add_middleware(
 )
 
 # Import and include routers
-from backend.api.routes import profile, applications, prepare, tasks, auth
+from backend.api.routes import profile, applications, prepare, tasks, auth, resume
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/profile", tags=["profile"])
+app.include_router(resume.router, prefix="/resume", tags=["resume"])
 app.include_router(applications.router, prefix="/applications", tags=["applications"])
 app.include_router(prepare.router, prefix="/prepare", tags=["prepare"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])

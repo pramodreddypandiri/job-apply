@@ -90,6 +90,30 @@ def analyse_github(username: str) -> list[dict]:
     return skills
 
 
+def analyse_resume(resume_text: str) -> list[dict]:
+    """Extract skills from resume text using LLM."""
+    logger.info("Analysing resume text for skills")
+    try:
+        result = extract(
+            prompt=(
+                "Extract all technical skills, tools, frameworks, and languages from this resume. "
+                "For each skill, estimate depth (1-5) based on how prominently it features.\n"
+                'Return JSON: {"skills": [{"skill_name": str, "category": "stack"|"cs_fundamentals"|"system_design"|"soft_skills", "depth": int}]}\n\n'
+                f"{resume_text[:6000]}"
+            ),
+            system="You are a technical recruiter extracting skills from a resume. Be thorough but accurate.",
+            max_tokens=1000,
+        )
+        skills = result.get("skills", [])
+        return [
+            {**s, "depth": min(5, max(1, s.get("depth", 2))), "source": ["resume"], "ownership_level": "self-reported"}
+            for s in skills
+        ]
+    except Exception as e:
+        logger.error(f"Resume analysis failed: {e}")
+        return []
+
+
 def analyse_portfolio(url: str) -> list[dict]:
     """Fetch portfolio URL and extract skill mentions."""
     logger.info(f"Analysing portfolio: {url}")
